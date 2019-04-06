@@ -23,6 +23,11 @@ int main(int argc, char *argv[]) {
     } else {
       parseInputLine(input);
     }
+    int status;
+    pid_t background = waitpid(-1, &status, WNOHANG);
+    if (background > 0) {
+      std::cout << "[" << background <<"] completed in the background with status code: " << status << std::endl;
+    }
   }
 
   return 0;
@@ -32,6 +37,7 @@ void lsExample1();
 void lsExample2();
 void lsExample3();
 void grepExample();
+void catBackgroundExample();
 
 void parseInputLine(const char * inputLine) {
   if (strcmp(inputLine,"ls\n") == 0) {
@@ -42,6 +48,8 @@ void parseInputLine(const char * inputLine) {
     lsExample3();
   } else if (strcmp(inputLine, "grep hun < test2.txt\n") == 0) {
     grepExample();
+  } else if (strcmp(inputLine, "cat test.txt &\n") == 0) {
+    catBackgroundExample();
   }
 }
 
@@ -139,5 +147,20 @@ void grepExample() {
     close(infile);
 
     execve("/usr/bin/grep", grep_args, 0);
+  }
+}
+
+// runs cat test.txt &
+void catBackgroundExample() {
+  int status;
+  if (fork()) {
+    
+  } else {
+    char *cat_args[3];
+    cat_args[0] = "/bin/cat";
+    cat_args[1] = "test.txt";
+    cat_args[2] = 0;
+
+    execve("/bin/cat", cat_args, 0);
   }
 }
