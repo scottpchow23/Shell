@@ -21,17 +21,8 @@ int main(int argc, char *argv[]) {
     if (eof == NULL) {
       break;
     } else {
-      // std::cin >> inputLine;
-      
-      // std::cin.read(input, MAX_LINE_SIZE);
-      
       parseInputLine(input);
-      
-
     }
-    
-    std::cout << "Echo:" << input << std::endl;
-
   }
 
   return 0;
@@ -40,6 +31,7 @@ int main(int argc, char *argv[]) {
 void lsExample1();
 void lsExample2();
 void lsExample3();
+void grepExample();
 
 void parseInputLine(const char * inputLine) {
   if (strcmp(inputLine,"ls\n") == 0) {
@@ -48,6 +40,8 @@ void parseInputLine(const char * inputLine) {
     lsExample2();
   } else if (strcmp(inputLine, "ls | cat\n") == 0) {
     lsExample3();
+  } else if (strcmp(inputLine, "grep hun < test2.txt\n") == 0) {
+    grepExample();
   }
 }
 
@@ -59,7 +53,7 @@ void lsExample1() {
   if (childPID == 0) {
     // child process
     char * ls_args[2];
-    ls_args[0] = ".";
+    ls_args[0] = "/bin/ls";
     ls_args[1] = 0;
     
     execve("/bin/ls", ls_args, 0);
@@ -79,7 +73,7 @@ void lsExample2() {
   } else {
     // child
     char * ls_args[2];
-    ls_args[0] = ".";
+    ls_args[0] = "/bin/ls";
     ls_args[1] = 0;
     
     int outfile = open("test.txt", O_WRONLY);
@@ -92,7 +86,7 @@ void lsExample2() {
   }
 }
 
-// runs ls . | cat
+// runs ls | cat
 void lsExample3() {
   int status;
   if (fork()) {
@@ -101,7 +95,7 @@ void lsExample3() {
   } else {
     // child
     char * ls_args[2];
-    ls_args[0] = ".";
+    ls_args[0] = "/bin/ls";
     ls_args[1] = 0;
 
     char * cat_args[1];
@@ -125,5 +119,25 @@ void lsExample3() {
       close(fileDescriptors[1]);
       execve("/bin/ls", ls_args, 0);
     }
+  }
+}
+
+// runs grep hun < test2.txt
+void grepExample() {
+  int status;
+  if (fork()) {
+    // parent
+    waitpid(-1, &status, 0);
+  } else {
+    // child
+    char *grep_args[3];
+    grep_args[0] = "/usr/bin/grep";
+    grep_args[1] = "hun";
+    grep_args[2] = 0;
+    int infile = open("test2.txt", O_RDONLY);
+    dup2(infile, STD_IN);
+    close(infile);
+
+    execve("/usr/bin/grep", grep_args, 0);
   }
 }

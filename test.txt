@@ -1,1 +1,6 @@
-
+Makefile
+simple_shell
+simple_shell.cpp
+simple_shell.dSYM
+test.txt
+test2.txt
