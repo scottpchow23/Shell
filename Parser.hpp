@@ -62,7 +62,7 @@ std::tuple<int, std::vector<std::shared_ptr<Parser::Word>>> parseArgs(std::vecto
   return std::tuple<int, std::vector<std::shared_ptr<Parser::Word>>>(newCursor, words);
 }
 
-std::tuple<int, std::shared_ptr<Parser::Command>> parseCommand(std::vector<Token> tokens, int cursor) {
+std::tuple<int, std::shared_ptr<Parser::Command>> parseCommand(std::vector<Token> tokens, int cursor, bool ltAllowed, bool gtAllowed) {
   std::shared_ptr<Parser::Word> in;
   std::shared_ptr<Parser::Word> out;
   int newCursor = cursor;
@@ -71,35 +71,55 @@ std::tuple<int, std::shared_ptr<Parser::Command>> parseCommand(std::vector<Token
   newCursor = cur;
   std::vector<std::shared_ptr<Parser::Word>> args = words;
 
-  if (tokens[newCursor].type == LT) {
+  if (tokens[newCursor].type == LT && ltAllowed) {
     std::cout << "Starting infile" << std::endl;
     const auto& [cur2, infile] = parseFile(tokens, newCursor + 1);
     in = infile;
     newCursor = cur2;
   }
 
-  if (tokens[newCursor].type == GT) {
+  if (tokens[newCursor].type == GT && gtAllowed) {
     std::cout << "Starting outfile" << std::endl;
     const auto& [cur2, outfile] = parseFile(tokens, newCursor + 1);
     out = outfile;
     newCursor = cur2;
   }
-
+  std::cout << "[Command] args: ";
+  for (std::shared_ptr<Parser::Word> word : args) {
+    std::cout << word->value << " ";
+  }
+  if (in != nullptr) {
+    std::cout << "| in: " << in->value << " ";
+  }
+  if (out != nullptr) {
+    std::cout << "| out: " <<  out->value;
+  }
+  std::cout << std::endl;
   return std::tuple<int, std::shared_ptr<Parser::Command>>(newCursor, std::make_shared<Parser::Command>(in, out, args));
 }
 
 std::tuple<int, std::shared_ptr<Parser::CommandSeq>> parseCommandSeq(std::vector<Token> tokens, int cursor) {
   int newCursor = cursor;
   std::cout << "Starting first Command" << std::endl;
-  const auto& [cur, cmd] = parseCommand(tokens, newCursor);
+  const auto& [cur, cmd] = parseCommand(tokens, newCursor, true, true);
   newCursor = cur;
   Token token = tokens.at(newCursor);
   std::shared_ptr<Parser::CommandSeq> headCS = std::make_shared<Parser::CommandSeq>(cmd, nullptr);
   std::shared_ptr<Parser::CommandSeq> curCS = headCS;
   while (token.type == Pipe) {
+    // check that the previous command didn't redirect output
+    if (curCS->left->out != nullptr) {
+      // syntax error because command before pipe redirected output
+      break;
+    }
+
     newCursor++;
     std::cout << "Starting another Command" << std::endl;
-    const auto& [cur2, cmd2] = parseCommand(tokens, newCursor);
+    const auto& [cur2, cmd2] = parseCommand(tokens, newCursor, false, true);
+    // error check that cmd2 resulted in full command
+    if (cmd2->argv.empty()) {
+      break;
+    }
     newCursor = cur2;
 
     curCS->right = std::make_shared<Parser::CommandSeq>(cmd2, nullptr);
