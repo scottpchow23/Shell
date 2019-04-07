@@ -71,19 +71,32 @@ std::tuple<int, std::shared_ptr<Parser::Command>> parseCommand(std::vector<Token
   newCursor = cur;
   std::vector<std::shared_ptr<Parser::Word>> args = words;
 
-  if (tokens[newCursor].type == LT && ltAllowed) {
-    std::cout << "Starting infile" << std::endl;
-    const auto& [cur2, infile] = parseFile(tokens, newCursor + 1);
-    in = infile;
+  while (tokens[newCursor].type == Word || tokens[newCursor].type == LT || tokens[newCursor].type == GT) {
+    if (tokens[newCursor].type == LT && ltAllowed) {
+      std::cout << "Starting infile" << std::endl;
+      const auto& [cur2, infile] = parseFile(tokens, newCursor + 1);
+      if (in != nullptr) {
+        return std::tuple<int, std::shared_ptr<Parser::Command>>(newCursor, nullptr);
+      }
+      in = infile;
+      newCursor = cur2;
+    }
+
+    if (tokens[newCursor].type == GT && gtAllowed) {
+      std::cout << "Starting outfile" << std::endl;
+      const auto& [cur2, outfile] = parseFile(tokens, newCursor + 1);
+      if (out != nullptr) {
+        return std::tuple<int, std::shared_ptr<Parser::Command>>(newCursor, nullptr);
+      }
+      out = outfile;
+      newCursor = cur2;
+    }
+    
+    const auto& [cur2, words2] = parseArgs(tokens, newCursor);
     newCursor = cur2;
+    args.insert(std::end(args), std::begin(words2), std::end(words2));
   }
 
-  if (tokens[newCursor].type == GT && gtAllowed) {
-    std::cout << "Starting outfile" << std::endl;
-    const auto& [cur2, outfile] = parseFile(tokens, newCursor + 1);
-    out = outfile;
-    newCursor = cur2;
-  }
   std::cout << "[Command] args: ";
   for (std::shared_ptr<Parser::Word> word : args) {
     std::cout << word->value << " ";

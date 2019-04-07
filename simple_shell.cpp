@@ -41,6 +41,7 @@ void lsExample2();
 void lsExample3();
 void grepExample();
 void catBackgroundExample();
+void execute(std::shared_ptr<Parser::Input>);
 
 void parseInputLine(const char * inputLine) {
   std::string input = std::string(inputLine);
@@ -52,10 +53,11 @@ void parseInputLine(const char * inputLine) {
 
   if (parsed) {
     std::cout << "It parsed!" << std::endl;
+    execute(inputAST);
   } else {
     std::cout << "It didn't parse." << std::endl;
+    std::cerr << "ERROR: Failed to parse command." << std::endl;
   }
-
   // if (strcmp(inputLine,"ls\n") == 0) {
   //   lsExample1();
   // } else if (strcmp(inputLine, "ls > test.txt\n") == 0) {
@@ -69,6 +71,9 @@ void parseInputLine(const char * inputLine) {
   // }
 }
 
+void execute(std::shared_ptr<Parser::Input> input) {
+  
+}
 
 // test cases:
 //     hi  there |   what> is<good&& my||||dude
