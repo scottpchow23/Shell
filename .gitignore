@@ -1,3 +1,4 @@
 *.o
 simple_shell
 simple_shell.dSYM
+.vscode

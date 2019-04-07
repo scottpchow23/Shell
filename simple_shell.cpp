@@ -2,12 +2,14 @@
 #include <string>
 #include <unistd.h>
 #include <fcntl.h>
+#include "Tokenizer.hpp"
 #define MAX_LINE_SIZE 512
 #define MAX_TOKEN_SIZE 32
 #define STD_OUT 1
 #define STD_IN 0
 
 void parseInputLine(const char * inputLine);
+void debugTokenizer(std::vector<Token> tokens);
 
 int main(int argc, char *argv[]) {
   // bool output = true;
@@ -40,6 +42,11 @@ void grepExample();
 void catBackgroundExample();
 
 void parseInputLine(const char * inputLine) {
+  std::string input = std::string(inputLine);
+  input[input.length() - 1] = 0;
+  std::vector<Token> tokens = tokenize(input);
+  debugTokenizer(tokens);
+
   if (strcmp(inputLine,"ls\n") == 0) {
     lsExample1();
   } else if (strcmp(inputLine, "ls > test.txt\n") == 0) {
@@ -51,6 +58,44 @@ void parseInputLine(const char * inputLine) {
   } else if (strcmp(inputLine, "cat test.txt &\n") == 0) {
     catBackgroundExample();
   }
+}
+
+
+// test cases:
+//     hi  there |   what> is<good&& my||||dude
+//  || | < >
+// hi|there|what&<>
+void debugTokenizer(std::vector<Token> tokens) {
+  std::cout << "[Tokens]:";
+  for (Token token : tokens) {
+    switch (token.type)
+    {
+      case Word:
+        std::cout << " WORD ";
+        break;
+      case LT:
+        std::cout << " LT ";
+        break;
+      case GT:
+        std::cout << " GT ";
+        break;
+      case Pipe:
+        std::cout << " Pipe ";
+        break;
+      case Amp:
+        std::cout << " Amp ";
+        break;
+      default:
+        break;
+    }
+  }
+  std::cout << std::endl;
+
+  std::cout << "[Values]:";
+  for (Token token : tokens) {
+    std::cout << " [" << token.value <<"] ";
+  }
+  std::cout << std::endl;
 }
 
 // runs ls .
