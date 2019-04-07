@@ -1,9 +1,11 @@
+#pragma once
 #include <string>
 #include <vector>
+#include <iostream>
 #define MAX_TOKEN_SIZE 32
 
 enum TokenType {
-  Word, GT, LT, Pipe, Amp
+  Word, GT, LT, Pipe, Amp, EOI
 };
 
 struct Token {
@@ -14,5 +16,6 @@ struct Token {
     this->value = value;
   };
 };
+
 
 std::vector<Token> tokenize(std::string input);

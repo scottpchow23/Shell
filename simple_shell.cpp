@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "Tokenizer.hpp"
+#include "Parser.hpp"
 #define MAX_LINE_SIZE 512
 #define MAX_TOKEN_SIZE 32
 #define STD_OUT 1
@@ -47,17 +48,25 @@ void parseInputLine(const char * inputLine) {
   std::vector<Token> tokens = tokenize(input);
   debugTokenizer(tokens);
 
-  if (strcmp(inputLine,"ls\n") == 0) {
-    lsExample1();
-  } else if (strcmp(inputLine, "ls > test.txt\n") == 0) {
-    lsExample2();
-  } else if (strcmp(inputLine, "ls | cat\n") == 0) {
-    lsExample3();
-  } else if (strcmp(inputLine, "grep hun < test2.txt\n") == 0) {
-    grepExample();
-  } else if (strcmp(inputLine, "cat test.txt &\n") == 0) {
-    catBackgroundExample();
+  const auto& [parsed, inputAST] = parse(tokens);
+
+  if (parsed) {
+    std::cout << "It parsed!" << std::endl;
+  } else {
+    std::cout << "It didn't parse." << std::endl;
   }
+
+  // if (strcmp(inputLine,"ls\n") == 0) {
+  //   lsExample1();
+  // } else if (strcmp(inputLine, "ls > test.txt\n") == 0) {
+  //   lsExample2();
+  // } else if (strcmp(inputLine, "ls | cat\n") == 0) {
+  //   lsExample3();
+  // } else if (strcmp(inputLine, "grep hun < test2.txt\n") == 0) {
+  //   grepExample();
+  // } else if (strcmp(inputLine, "cat test.txt &\n") == 0) {
+  //   catBackgroundExample();
+  // }
 }
 
 

@@ -1,6 +1,9 @@
 #include "Tokenizer.hpp"
 
 
+
+
+
 // struct Tokenizer {
   std::vector<Token> tokenize(std::string input) {
     std::vector<Token> tokens;
@@ -71,7 +74,7 @@
       Token newToken = Token(Word, input.substr(startOfToken, input.length()));
       tokens.push_back(newToken);
     }
-
+    tokens.push_back(Token(EOI, ""));
     return tokens;
   }
 // };
