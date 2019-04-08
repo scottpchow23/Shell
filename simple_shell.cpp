@@ -22,23 +22,29 @@ void debugTokenizer(std::vector<Token> tokens);
 
 bool foreground = true;
 bool printShell = true;
+bool suppressShell = false;
 
 void sig_trap(int sig) {
   std::cout << std::endl;
-  std::cout << "shell:";
+  if (!suppressShell)
+    std::cout << "shell: ";
   if (!foreground)
     printShell = false;
   std::cout.flush();
 }
 
 int main(int argc, char *argv[]) {
-  // bool output = true;
   char *input = new char[512];
   signal(SIGINT, &sig_trap);
 
+  if (argc == 2 && strcmp("-n\n", argv[1])) {
+    suppressShell = true;
+  }
+
   while(1) {
     if (printShell){
-      std::cout << "shell:";
+      if (!suppressShell)
+        std::cout << "shell: ";
     } else {
       printShell = true;
       foreground = true;
@@ -51,7 +57,7 @@ int main(int argc, char *argv[]) {
     } else {
       std::vector<Token> tokens = tokenizeInputLine(input);
       std::shared_ptr<Parser::Input> inputAST = parseForInput(tokens);
-      if (tokens.size() > 1)
+      if (tokens.size() > 1 && inputAST)
         execute(inputAST);
     }
     int status;
@@ -60,6 +66,8 @@ int main(int argc, char *argv[]) {
       std::cout << "[" << background <<"] completed in the background with status code: " << status << std::endl;
     }
   }
+
+  free(input);
 
   return 0;
 }
@@ -84,6 +92,7 @@ std::shared_ptr<Parser::Input> parseForInput(std::vector<Token> tokens) {
     if (DEBUG_PARSER)
       std::cout << "It didn't parse." << std::endl;
     std::cerr << "ERROR: Failed to parse command." << std::endl;
+    return nullptr;
   }
 
   return inputAST;
