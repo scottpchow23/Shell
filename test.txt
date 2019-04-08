@@ -1,6 +1,12 @@
 Makefile
+Parser.hpp
+README.md
+Tokenizer.cpp
+Tokenizer.hpp
+Tokenizer.o
 simple_shell
 simple_shell.cpp
-simple_shell.dSYM
+simple_shell.o
 test.txt
 test2.txt
+test_cases.txt
