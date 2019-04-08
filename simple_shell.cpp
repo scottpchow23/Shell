@@ -2,6 +2,9 @@
 #include <string>
 #include <unistd.h>
 #include <fcntl.h>
+#ifdef __linux
+  #include <wait.h>
+#endif
 #include "Tokenizer.hpp"
 #include "Parser.hpp"
 #define MAX_LINE_SIZE 512
