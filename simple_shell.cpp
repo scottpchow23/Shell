@@ -74,6 +74,64 @@ std::shared_ptr<Parser::Input> parseForInput(std::vector<Token> tokens) {
   return inputAST;
 }
 
+void executeCommand(std::shared_ptr<Parser::Command> command, int input = -1, int output = -1) {
+  std::vector<char *> args;
+  for (std::shared_ptr<Parser::Word> word : command->argv) {
+    args.push_back(&word->value.front());
+  }
+
+  if (command->in) {
+    int infile = open(command->in->value.c_str(), O_RDONLY);
+    dup2(infile, STD_IN);
+    close(infile);
+  }
+
+  if (command->out) {
+    int outfile = open(command->out->value.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+    dup2(outfile, STD_OUT);
+    close(outfile);
+  }
+
+  if (input > 0) {
+    dup2(input, STD_IN);
+  }
+
+  if (output > 0) {
+    dup2(output, STD_OUT);
+  }
+  
+  args.push_back(nullptr);
+  if (DEBUG_EXECUCTOR) {
+    std::cout << "[Execve]: ";
+    for (char * arg : args) {
+      if (arg != nullptr)
+        std::cout << arg << " ";
+    }
+    std::cout << std::endl;
+  }
+  execvp(args.at(0), &args.front());
+}
+
+void executeCommandSeq(std::shared_ptr<Parser::CommandSeq> commandSeq, int redirectedInput = -1) {
+  if (commandSeq->right) {
+    int pipefd[2];
+    pipe(pipefd);
+    pid_t child = fork();
+
+    if (child) {
+      int status;
+      close(pipefd[1]);
+      waitpid(child, &status, 0);
+      executeCommandSeq(commandSeq->right, pipefd[0]);
+    } else {
+      close(pipefd[0]);
+      executeCommand(commandSeq->left, redirectedInput, pipefd[1]);
+    }
+  } else {
+    executeCommand(commandSeq->left, redirectedInput);
+  }
+}
+
 void execute(std::shared_ptr<Parser::Input> input) {
   pid_t childPID = fork();
   int status;
@@ -86,53 +144,13 @@ void execute(std::shared_ptr<Parser::Input> input) {
     }
   } else {
     // Child Process
-
-
     std::shared_ptr<Parser::CommandSeq> commandSeq = input->cs;
 
-    // while(commandSeq->right) {
-    //   pid_t child = fork();
-    //   int childStatus;
-    //   if (child) {
-    //     // Parent
-    //     waitpid(child, &childStatus, 0);
-    //     commandSeq = commandSeq->right;
-    //   } else {
-        
-    //   }
-    // }
-    
-    std::shared_ptr<Parser::Command> command = input->cs->left;
-
-    std::vector<char *> args;
-    for (std::shared_ptr<Parser::Word> word : command->argv) {
-      args.push_back(&word->value.front());
-    }
-
-    if (command->in) {
-      int infile = open(command->in->value.c_str(), O_RDONLY);
-      dup2(infile, STD_IN);
-      close(infile);
-    }
-
-    if (command->out) {
-      int outfile = open(command->out->value.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
-      dup2(outfile, STD_OUT);
-      close(outfile);
-    }
-    
-    args.push_back(nullptr);
-    if (DEBUG_EXECUCTOR) {
-      std::cout << "[Execve]: ";
-      for (char * arg : args) {
-        if (arg != nullptr)
-          std::cout << arg << " ";
-      }
-      std::cout << std::endl;
-    }
-    execvp(args.at(0), &args.front());
+    executeCommandSeq(commandSeq);
   }
 }
+
+
 
 // test cases:
 //     hi  there |   what> is<good&& my||||dude

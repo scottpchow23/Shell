@@ -1,6 +1,7 @@
 # CS 170 Project 1: Simple Shell
 
 Submission from: Scott Chow
+
 Perm: 4302667
 
 ## Basic structure
