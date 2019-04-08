@@ -37,3 +37,8 @@ Note: the above rules aren't exactly the grammar I'm allowing but serve as a rou
 
 ### Execution
 
+Execution occurs recursively down the `Parser::Input` data structure, with calls to `executeInput`, `executeCommandSeq`, and `executeCommand`. What I'll draw attention to is the manner in which pipes are setup and maintained across this recursive approach. I manage this by having `executeCommandSeq` pass the redirected input from one command to the next (modeling pipe behavior), while allowing `executeCommand` to take arguments for redirecting input and output accordingly.
+
+### Catching Signals
+
+At the moment this simple shell only deals with `SIGINT` from itself and its child processes. It does so via `signal(2)`, for which the signal handler function simply prints the `shell:` prompt again, while also preventing the main run loop from printing it a second time.
