@@ -17,15 +17,31 @@ std::shared_ptr<Parser::Input> parseForInput(std::vector<Token> tokens);
 void execute(std::shared_ptr<Parser::Input> input);
 void debugTokenizer(std::vector<Token> tokens);
 
+bool printShell = true;
+
+void sig_trap(int sig) {
+  // std::cerr << "Caught signal " << sig << "from child process." << std::endl;
+  std::cout << std::endl;
+  std::cout << "shell:";
+  printShell = false;
+  std::cout.flush();
+}
+
 int main(int argc, char *argv[]) {
   // bool output = true;
   char *input = new char[512];
+  signal(SIGINT, &sig_trap);
 
   while(1) {
-    std::cout << "shell:";
+    if (printShell){
+      std::cout << "shell:";
+    } else {
+      printShell = true;
+    }
 
     char *eof = fgets(input, MAX_LINE_SIZE, stdin);
     if (eof == NULL) {
+      std::cout << std::endl;
       break;
     } else {
       std::vector<Token> tokens = tokenizeInputLine(input);
@@ -42,12 +58,6 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
-
-// void lsExample1();
-// void lsExample2();
-// void lsExample3();
-// void grepExample();
-// void catBackgroundExample();
 
 std::vector<Token> tokenizeInputLine(const char * inputLine) {
   std::string input = std::string(inputLine);
@@ -137,25 +147,16 @@ void execute(std::shared_ptr<Parser::Input> input) {
   int status;
 
   if (childPID) {
-    // Parent process
-    // If not backgrounded wait, otherwise move on
     if (!input->background) {
       waitpid(childPID, &status, 0);
     }
   } else {
-    // Child Process
     std::shared_ptr<Parser::CommandSeq> commandSeq = input->cs;
 
     executeCommandSeq(commandSeq);
   }
 }
 
-
-
-// test cases:
-//     hi  there |   what> is<good&& my||||dude
-//  || | < >
-// hi|there|what&<>
 void debugTokenizer(std::vector<Token> tokens) {
   std::cout << "[Tokens]:";
   for (Token token : tokens) {
@@ -188,115 +189,3 @@ void debugTokenizer(std::vector<Token> tokens) {
   }
   std::cout << std::endl;
 }
-
-// // runs ls .
-// void lsExample1() {
-//   pid_t childPID = fork();
-//   int status;
-
-//   if (childPID == 0) {
-//     // child process
-//     char * ls_args[2];
-//     ls_args[0] = "/bin/ls";
-//     ls_args[1] = 0;
-    
-//     execve("/bin/ls", ls_args, 0);
-//   } else {
-//     // parent process
-//     waitpid(childPID, &status, 0);
-//     std::cout << "Child process " << childPID <<" returned with status code: " << status << std::endl;
-//   }
-// }
-
-// // runs ls . > test.txt
-// void lsExample2() {
-//   int status;
-//   if (fork()) {
-//     // parent
-//     waitpid(-1, &status, 0);
-//   } else {
-//     // child
-//     char * ls_args[2];
-//     ls_args[0] = "/bin/ls";
-//     ls_args[1] = 0;
-    
-//     int outfile = open("test.txt", O_WRONLY);
-
-//     dup2(outfile, 1);
-
-//     close(outfile);
-
-//     execve("/bin/ls", ls_args, 0);
-//   }
-// }
-
-// // runs ls | cat
-// void lsExample3() {
-//   int status;
-//   if (fork()) {
-//     // parent
-//     waitpid(-1, &status, 0);
-//   } else {
-//     // child
-//     char * ls_args[2];
-//     ls_args[0] = "/bin/ls";
-//     ls_args[1] = 0;
-
-//     char * cat_args[1];
-//     cat_args[0] = 0;
-
-//     int fileDescriptors[2];
-//     pipe(fileDescriptors);
-//     int secondStatus;
-
-//     if (fork()) {
-//       // parent, handling cat (the last command)
-//       waitpid(-1, &secondStatus, 0);
-//       dup2(fileDescriptors[0], STD_IN);
-//       close(fileDescriptors[0]);
-//       close(fileDescriptors[1]);
-//       execve("/bin/cat", cat_args, 0);
-//     } else {
-//       // child, handling ls . (the first command)
-//       dup2(fileDescriptors[1], STD_OUT);
-//       close(fileDescriptors[0]);
-//       close(fileDescriptors[1]);
-//       execve("/bin/ls", ls_args, 0);
-//     }
-//   }
-// }
-
-// // runs grep hun < test2.txt
-// void grepExample() {
-//   int status;
-//   if (fork()) {
-//     // parent
-//     waitpid(-1, &status, 0);
-//   } else {
-//     // child
-//     char *grep_args[3];
-//     grep_args[0] = "/usr/bin/grep";
-//     grep_args[1] = "hun";
-//     grep_args[2] = 0;
-//     int infile = open("test2.txt", O_RDONLY);
-//     dup2(infile, STD_IN);
-//     close(infile);
-
-//     execve("/usr/bin/grep", grep_args, 0);
-//   }
-// }
-
-// // runs cat test.txt &
-// void catBackgroundExample() {
-//   int status;
-//   if (fork()) {
-    
-//   } else {
-//     char *cat_args[3];
-//     cat_args[0] = "/bin/cat";
-//     cat_args[1] = "test.txt";
-//     cat_args[2] = 0;
-
-//     execve("/bin/cat", cat_args, 0);
-//   }
-// }
