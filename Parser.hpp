@@ -1,6 +1,7 @@
 #pragma once
 #include <tuple>
 #include <utility>
+#include <memory>
 #include "Tokenizer.hpp"
 
 #define DEBUG_PARSER 0

@@ -17,5 +17,4 @@ struct Token {
   };
 };
 
-
 std::vector<Token> tokenize(std::string input);

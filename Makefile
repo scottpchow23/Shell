@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -Wall -g -fsanitize=address -std=c++17
+CXXFLAGS = -Wall -g -std=c++17
 
 
 

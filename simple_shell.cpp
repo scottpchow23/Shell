@@ -17,13 +17,14 @@ std::shared_ptr<Parser::Input> parseForInput(std::vector<Token> tokens);
 void execute(std::shared_ptr<Parser::Input> input);
 void debugTokenizer(std::vector<Token> tokens);
 
+bool foreground = true;
 bool printShell = true;
 
 void sig_trap(int sig) {
-  // std::cerr << "Caught signal " << sig << "from child process." << std::endl;
   std::cout << std::endl;
   std::cout << "shell:";
-  printShell = false;
+  if (!foreground)
+    printShell = false;
   std::cout.flush();
 }
 
@@ -37,6 +38,7 @@ int main(int argc, char *argv[]) {
       std::cout << "shell:";
     } else {
       printShell = true;
+      foreground = true;
     }
 
     char *eof = fgets(input, MAX_LINE_SIZE, stdin);
@@ -147,6 +149,7 @@ void execute(std::shared_ptr<Parser::Input> input) {
   int status;
 
   if (childPID) {
+    foreground = false;
     if (!input->background) {
       waitpid(childPID, &status, 0);
     }
