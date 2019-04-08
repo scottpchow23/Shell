@@ -8,6 +8,9 @@
 #define MAX_TOKEN_SIZE 32
 #define STD_OUT 1
 #define STD_IN 0
+#define DEBUG_TOKENIZER 0
+#define DEBUG_EXECUCTOR 0
+
 
 void parseInputLine(const char * inputLine);
 void debugTokenizer(std::vector<Token> tokens);
@@ -47,32 +50,54 @@ void parseInputLine(const char * inputLine) {
   std::string input = std::string(inputLine);
   input[input.length() - 1] = 0;
   std::vector<Token> tokens = tokenize(input);
-  debugTokenizer(tokens);
+  if (DEBUG_TOKENIZER)
+    debugTokenizer(tokens);
 
   const auto& [parsed, inputAST] = parse(tokens);
 
   if (parsed) {
-    std::cout << "It parsed!" << std::endl;
-    execute(inputAST);
+    if (DEBUG_PARSER)
+      std::cout << "It parsed!" << std::endl;
+    if (tokens.size() > 1)
+      execute(inputAST);
   } else {
-    std::cout << "It didn't parse." << std::endl;
+    if (DEBUG_PARSER)
+      std::cout << "It didn't parse." << std::endl;
     std::cerr << "ERROR: Failed to parse command." << std::endl;
   }
-  // if (strcmp(inputLine,"ls\n") == 0) {
-  //   lsExample1();
-  // } else if (strcmp(inputLine, "ls > test.txt\n") == 0) {
-  //   lsExample2();
-  // } else if (strcmp(inputLine, "ls | cat\n") == 0) {
-  //   lsExample3();
-  // } else if (strcmp(inputLine, "grep hun < test2.txt\n") == 0) {
-  //   grepExample();
-  // } else if (strcmp(inputLine, "cat test.txt &\n") == 0) {
-  //   catBackgroundExample();
-  // }
 }
 
 void execute(std::shared_ptr<Parser::Input> input) {
-  
+  pid_t childPID = fork();
+  int status;
+
+  if (childPID) {
+    // Parent process
+    // If not backgrounded wait, otherwise move on
+    if (!input->background) {
+      waitpid(childPID, &status, 0);
+    }
+  } else {
+    // Child Process
+    
+    std::vector<char *> args;
+    for (std::shared_ptr<Parser::Word> word : input->cs->left->argv) {
+      
+      args.push_back(&word->value.front());
+      
+    }
+    
+    args.push_back(nullptr);
+    if (DEBUG_EXECUCTOR) {
+      std::cout << "[Execve]: ";
+      for (char * arg : args) {
+        if (arg != nullptr)
+          std::cout << arg << " ";
+      }
+      std::cout << std::endl;
+    }
+    execvp(args.at(0), &args.front());
+  }
 }
 
 // test cases:

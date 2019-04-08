@@ -2,6 +2,9 @@
 #include <tuple>
 #include <utility>
 #include "Tokenizer.hpp"
+
+#define DEBUG_PARSER 0
+
 namespace Parser {
   struct Word {
     std::string value;
@@ -66,14 +69,16 @@ std::tuple<int, std::shared_ptr<Parser::Command>> parseCommand(std::vector<Token
   std::shared_ptr<Parser::Word> in;
   std::shared_ptr<Parser::Word> out;
   int newCursor = cursor;
-  std::cout << "Starting Args" << std::endl;
+  if (DEBUG_PARSER)
+    std::cout << "Starting Args" << std::endl;
   const auto& [cur, words] = parseArgs(tokens, newCursor);
   newCursor = cur;
   std::vector<std::shared_ptr<Parser::Word>> args = words;
 
   while (tokens[newCursor].type == Word || tokens[newCursor].type == LT || tokens[newCursor].type == GT) {
     if (tokens[newCursor].type == LT && ltAllowed) {
-      std::cout << "Starting infile" << std::endl;
+      if (DEBUG_PARSER)
+        std::cout << "Starting infile" << std::endl;
       const auto& [cur2, infile] = parseFile(tokens, newCursor + 1);
       if (in != nullptr) {
         return std::tuple<int, std::shared_ptr<Parser::Command>>(newCursor, nullptr);
@@ -83,7 +88,8 @@ std::tuple<int, std::shared_ptr<Parser::Command>> parseCommand(std::vector<Token
     }
 
     if (tokens[newCursor].type == GT && gtAllowed) {
-      std::cout << "Starting outfile" << std::endl;
+      if (DEBUG_PARSER)
+        std::cout << "Starting outfile" << std::endl;
       const auto& [cur2, outfile] = parseFile(tokens, newCursor + 1);
       if (out != nullptr) {
         return std::tuple<int, std::shared_ptr<Parser::Command>>(newCursor, nullptr);
@@ -96,24 +102,29 @@ std::tuple<int, std::shared_ptr<Parser::Command>> parseCommand(std::vector<Token
     newCursor = cur2;
     args.insert(std::end(args), std::begin(words2), std::end(words2));
   }
-
-  std::cout << "[Command] args: ";
+  if (DEBUG_PARSER)
+    std::cout << "[Command] args: ";
   for (std::shared_ptr<Parser::Word> word : args) {
-    std::cout << word->value << " ";
+    if (DEBUG_PARSER)
+      std::cout << word->value << " ";
   }
   if (in != nullptr) {
-    std::cout << "| in: " << in->value << " ";
+    if (DEBUG_PARSER)
+      std::cout << "| in: " << in->value << " ";
   }
   if (out != nullptr) {
-    std::cout << "| out: " <<  out->value;
+    if (DEBUG_PARSER)
+      std::cout << "| out: " <<  out->value;
   }
-  std::cout << std::endl;
+  if (DEBUG_PARSER)
+    std::cout << std::endl;
   return std::tuple<int, std::shared_ptr<Parser::Command>>(newCursor, std::make_shared<Parser::Command>(in, out, args));
 }
 
 std::tuple<int, std::shared_ptr<Parser::CommandSeq>> parseCommandSeq(std::vector<Token> tokens, int cursor) {
   int newCursor = cursor;
-  std::cout << "Starting first Command" << std::endl;
+  if (DEBUG_PARSER)
+    std::cout << "Starting first Command" << std::endl;
   const auto& [cur, cmd] = parseCommand(tokens, newCursor, true, true);
   newCursor = cur;
   Token token = tokens.at(newCursor);
@@ -127,7 +138,8 @@ std::tuple<int, std::shared_ptr<Parser::CommandSeq>> parseCommandSeq(std::vector
     }
 
     newCursor++;
-    std::cout << "Starting another Command" << std::endl;
+    if (DEBUG_PARSER)
+      std::cout << "Starting another Command" << std::endl;
     const auto& [cur2, cmd2] = parseCommand(tokens, newCursor, false, true);
     // error check that cmd2 resulted in full command
     if (cmd2->argv.empty()) {
@@ -144,7 +156,8 @@ std::tuple<int, std::shared_ptr<Parser::CommandSeq>> parseCommandSeq(std::vector
 }
 
 std::tuple<int, std::shared_ptr<Parser::Input>> parseInput(std::vector<Token> tokens) {
-  std::cout << "Starting CommandSeq" << std::endl;
+  if (DEBUG_PARSER)
+    std::cout << "Starting CommandSeq" << std::endl;
   const auto& [cur, cs] = parseCommandSeq(tokens, 0);
   int newCursor = cur;
   bool background = false;
@@ -157,7 +170,8 @@ std::tuple<int, std::shared_ptr<Parser::Input>> parseInput(std::vector<Token> to
 }
 
 std::tuple<bool, std::shared_ptr<Parser::Input>> parse(std::vector<Token> tokens) {
-  std::cout << "Starting Input" << std::endl;
+  if (DEBUG_PARSER)
+    std::cout << "Starting Input" << std::endl;
   const auto& [cur, input] = parseInput(tokens);
   bool parsed = (tokens[cur].type == EOI);
   return std::tuple<bool, std::shared_ptr<Parser::Input>>(parsed, input);
