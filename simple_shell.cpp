@@ -133,7 +133,18 @@ void executeCommand(std::shared_ptr<Parser::Command> command, int input = -1, in
     }
     std::cout << std::endl;
   }
-  execvp(args.at(0), &args.front());
+  int err = execvp(args.at(0), &args.front());
+  if (err == -1) {
+    switch(errno) {
+      case ENOENT:
+        std::cout << "ERROR: " << args.at(0) << ": command not found" << std::endl;
+        break;
+      default:
+        std::cout << "ERROR: " << args.at(0) << ": error code: " << errno << std::endl;
+        break;
+    }
+  }
+  exit(1);
 }
 
 void executeCommandSeq(std::shared_ptr<Parser::CommandSeq> commandSeq, int redirectedInput = -1) {
