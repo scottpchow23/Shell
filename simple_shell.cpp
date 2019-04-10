@@ -106,12 +106,20 @@ void executeCommand(std::shared_ptr<Parser::Command> command, int input = -1, in
 
   if (command->in) {
     int infile = open(command->in->value.c_str(), O_RDONLY);
+    if (infile < 0) {
+      std::cout << "ERROR: Problem opening input file: " << command->in->value.c_str() << std::endl;
+      exit(1);
+    }
     dup2(infile, STD_IN);
     close(infile);
   }
 
   if (command->out) {
     int outfile = open(command->out->value.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+    if (outfile < 0) {
+      std::cout << "ERROR: Problem opening output file: " << command->out->value.c_str() << std::endl;
+      exit(1); 
+    }
     dup2(outfile, STD_OUT);
     close(outfile);
   }
