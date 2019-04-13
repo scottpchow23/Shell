@@ -155,24 +155,40 @@ void executeCommand(std::shared_ptr<Parser::Command> command, int input = -1, in
   exit(1);
 }
 
-void executeCommandSeq(std::shared_ptr<Parser::CommandSeq> commandSeq, int redirectedInput = -1) {
-  if (commandSeq->right) {
-    int pipefd[2];
-    pipe(pipefd);
-    pid_t child = fork();
+void executeCommandSeq(std::shared_ptr<Parser::CommandSeq> commandSeq, int redirectedInput = -1, int children = 0) {
+  if (commandSeq) {
+    if (commandSeq->right) {
+      int pipefd[2];
+      pipe(pipefd);
+      pid_t child = fork();
 
-    if (child) {
-      int status;
-      close(pipefd[1]);
-      waitpid(child, &status, 0);
-      executeCommandSeq(commandSeq->right, pipefd[0]);
+      if (child) {
+        // int status;
+        close(pipefd[1]);
+        // waitpid(child, &status, 0 );
+        executeCommandSeq(commandSeq->right, pipefd[0], ++children);
+      } else {
+        close(pipefd[0]);
+        executeCommand(commandSeq->left, redirectedInput, pipefd[1]);
+      }
     } else {
-      close(pipefd[0]);
-      executeCommand(commandSeq->left, redirectedInput, pipefd[1]);
+      pid_t child = fork();
+      if (child) {
+        executeCommandSeq(nullptr, -1, ++children);
+      } else {
+        executeCommand(commandSeq->left, redirectedInput);
+      }
+      
     }
   } else {
-    executeCommand(commandSeq->left, redirectedInput);
+    while(children > 0) {
+      int status;
+      waitpid(-1, &status, 0);
+      children--;
+    }
+    exit(0);
   }
+  
 }
 
 void execute(std::shared_ptr<Parser::Input> input) {
