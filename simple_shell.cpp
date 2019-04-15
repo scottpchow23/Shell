@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #ifdef __linux
+  #include <cstring>
   #include <wait.h>
 #endif
 #include "Tokenizer.hpp"
