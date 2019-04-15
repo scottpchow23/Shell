@@ -23,14 +23,18 @@ void debugTokenizer(std::vector<Token> tokens);
 bool foreground = true;
 bool printShell = true;
 bool suppressShell = false;
+int shell_children = 0;
 
 void sig_trap(int sig) {
   std::cout << std::endl;
-  if (!suppressShell)
+  shell_children--;
+  if (!suppressShell && shell_children == 0) {
     std::cout << "shell: ";
+    std::cout.flush();
+  }
   if (!foreground)
     printShell = false;
-  std::cout.flush();
+  
 }
 
 int main(int argc, char *argv[]) {
@@ -107,7 +111,7 @@ void executeCommand(std::shared_ptr<Parser::Command> command, int input = -1, in
   if (command->in) {
     int infile = open(command->in->value.c_str(), O_RDONLY);
     if (infile < 0) {
-      std::cout << "ERROR: Problem opening input file: " << command->in->value.c_str() << std::endl;
+      std::cerr << "ERROR: Problem opening input file: " << command->in->value.c_str() << std::endl;
       exit(1);
     }
     dup2(infile, STD_IN);
@@ -117,7 +121,7 @@ void executeCommand(std::shared_ptr<Parser::Command> command, int input = -1, in
   if (command->out) {
     int outfile = open(command->out->value.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
     if (outfile < 0) {
-      std::cout << "ERROR: Problem opening output file: " << command->out->value.c_str() << std::endl;
+      std::cerr << "ERROR: Problem opening output file: " << command->out->value.c_str() << std::endl;
       exit(1); 
     }
     dup2(outfile, STD_OUT);
@@ -145,10 +149,10 @@ void executeCommand(std::shared_ptr<Parser::Command> command, int input = -1, in
   if (err == -1) {
     switch(errno) {
       case ENOENT:
-        std::cout << "ERROR: " << args.at(0) << ": command not found" << std::endl;
+        std::cerr << "ERROR: " << args.at(0) << ": command not found" << std::endl;
         break;
       default:
-        std::cout << "ERROR: " << args.at(0) << ": error code: " << errno << std::endl;
+        std::cerr << "ERROR: " << args.at(0) << ": error code: " << errno << std::endl;
         break;
     }
   }
@@ -166,7 +170,8 @@ void executeCommandSeq(std::shared_ptr<Parser::CommandSeq> commandSeq, int redir
         // int status;
         close(pipefd[1]);
         // waitpid(child, &status, 0 );
-        executeCommandSeq(commandSeq->right, pipefd[0], ++children);
+        int child_count = children + 1;
+        executeCommandSeq(commandSeq->right, pipefd[0], child_count);
       } else {
         close(pipefd[0]);
         executeCommand(commandSeq->left, redirectedInput, pipefd[1]);
@@ -174,13 +179,16 @@ void executeCommandSeq(std::shared_ptr<Parser::CommandSeq> commandSeq, int redir
     } else {
       pid_t child = fork();
       if (child) {
-        executeCommandSeq(nullptr, -1, ++children);
+        int child_count = children + 1;
+        executeCommandSeq(nullptr, -1, child_count);
       } else {
         executeCommand(commandSeq->left, redirectedInput);
       }
       
     }
   } else {
+    shell_children = children;
+    // std::cout << "There are " << shell_children << std::endl;
     while(children > 0) {
       int status;
       waitpid(-1, &status, 0);
