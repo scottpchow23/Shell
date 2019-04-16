@@ -144,7 +144,8 @@ std::tuple<int, std::shared_ptr<Parser::CommandSeq>> parseCommandSeq(std::vector
     const auto& [cur2, cmd2] = parseCommand(tokens, newCursor, false, true);
     // error check that cmd2 resulted in full command
     if (cmd2->argv.empty()) {
-      break;
+      // std::cerr << "ERROR: Syntax error: no valid command following the '|' token." << std::endl;
+      return std::tuple<int, std::shared_ptr<Parser::CommandSeq>>(newCursor, nullptr);
     }
     newCursor = cur2;
 
@@ -152,7 +153,7 @@ std::tuple<int, std::shared_ptr<Parser::CommandSeq>> parseCommandSeq(std::vector
     curCS = curCS->right;
     token = tokens.at(newCursor);
   }
-
+  
   return std::tuple<int, std::shared_ptr<Parser::CommandSeq>>(newCursor, headCS);
 }
 
@@ -160,6 +161,9 @@ std::tuple<int, std::shared_ptr<Parser::Input>> parseInput(std::vector<Token> to
   if (DEBUG_PARSER)
     std::cout << "Starting CommandSeq" << std::endl;
   const auto& [cur, cs] = parseCommandSeq(tokens, 0);
+  if (cs == nullptr) {
+    return std::tuple<int, std::shared_ptr<Parser::Input>>(cur, nullptr);
+  }
   int newCursor = cur;
   bool background = false;
   if (tokens[cur].type == Amp) {
@@ -174,6 +178,6 @@ std::tuple<bool, std::shared_ptr<Parser::Input>> parse(std::vector<Token> tokens
   if (DEBUG_PARSER)
     std::cout << "Starting Input" << std::endl;
   const auto& [cur, input] = parseInput(tokens);
-  bool parsed = (tokens[cur].type == EOI);
+  bool parsed = (tokens[cur].type == EOI && (!cur || input));
   return std::tuple<bool, std::shared_ptr<Parser::Input>>(parsed, input);
 }
